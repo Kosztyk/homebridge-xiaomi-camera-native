@@ -1,0 +1,42 @@
+{
+  "pluginAlias": "XiaomiCameraNative",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "headerDisplay": "Direct Xiaomi camera streaming. Sign in using the same region as Mi Home.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": { "title": "Name", "type": "string", "default": "Xiaomi Camera Native" },
+      "region": { "title": "Region", "type": "string", "enum": ["cn","de","i2","ru","sg","us"], "default": "de" },
+      "authId": { "title": "Saved account reference", "type": "string" },
+      "userId": { "title": "Xiaomi account ID (manual setup)", "type": "string" },
+      "passToken": { "title": "Account passToken (manual setup)", "type": "string" },
+      "includeOnlyConfigured": { "title": "Publish only selected camera IDs", "type": "boolean", "default": false },
+      "cameras": { "title": "Camera overrides", "type": "array", "default": [], "items": { "type": "object", "required": ["did"], "properties": {
+        "did": { "title": "Xiaomi device ID", "type": "string", "minLength": 1 },
+        "name": { "title": "Name override", "type": "string" },
+        "host": { "title": "Local IPv4 address override", "type": "string" },
+        "exclude": { "title": "Exclude camera", "type": "boolean", "default": false },
+        "transport": { "title": "Transport", "type": "string", "enum": ["auto","udp","tcp"], "default": "auto" },
+        "quality": { "title": "Source quality", "type": "string", "enum": ["auto","sd","hd","0","1","2","3","4","5"] },
+        "port": { "title": "CS2 bootstrap port", "type": "integer", "minimum": 1, "maximum": 65535, "default": 32108 },
+        "panTilt": { "title": "Force pan/tilt for another motorized CS2 model", "type": "boolean" },
+        "exposePanTilt": { "title": "Expose movement controls", "type": "boolean", "default": true }
+      } } },
+      "ffmpegPath": { "title": "FFmpeg path", "type": "string" },
+      "maxWidth": { "title": "Maximum width", "type": "integer", "minimum": 320, "maximum": 1280, "default": 1280 },
+      "maxHeight": { "title": "Maximum height", "type": "integer", "enum": [360,480,720], "default": 720 },
+      "maxFPS": { "title": "Maximum frame rate", "type": "integer", "enum": [15,20], "default": 20 },
+      "maxBitrate": { "title": "Maximum bitrate (kbit/s)", "type": "integer", "minimum": 128, "maximum": 4000, "default": 1500 },
+      "maxStreams": { "title": "Concurrent HomeKit viewers per camera", "type": "integer", "minimum": 1, "maximum": 2, "default": 2 },
+      "encoderThreads": { "title": "Encoder threads per stream", "type": "integer", "minimum": 1, "maximum": 8, "default": 2 },
+      "idleTimeout": { "title": "Camera idle timeout (seconds)", "type": "integer", "minimum": 0, "maximum": 300, "default": 15 },
+      "snapshotCacheSeconds": { "title": "Snapshot cache (seconds)", "type": "integer", "minimum": 0, "maximum": 30, "default": 10 },
+      "discoveryInterval": { "title": "Discovery interval (seconds)", "type": "integer", "minimum": 60, "default": 900 },
+      "exposePanTilt": { "title": "Expose supported pan/tilt controls", "type": "boolean", "default": true },
+      "disabled": { "title": "Disable plugin", "type": "boolean", "default": false },
+      "debug": { "title": "Debug logging", "type": "boolean", "default": false }
+    }
+  }
+}

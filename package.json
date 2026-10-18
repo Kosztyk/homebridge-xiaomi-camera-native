@@ -1,0 +1,63 @@
+{
+  "name": "homebridge-xiaomi-camera-native",
+  "version": "1.0.1",
+  "description": "Direct Xiaomi MISS/CS2 cameras for Homebridge with HomeKit video, snapshots and pan/tilt.",
+  "main": "index.js",
+  "license": "MIT",
+  "author": {
+    "name": "Kosztyk",
+    "url": "https://github.com/Kosztyk"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kosztyk/homebridge-xiaomi-camera-native.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Kosztyk/homebridge-xiaomi-camera-native/issues"
+  },
+  "homepage": "https://github.com/Kosztyk/homebridge-xiaomi-camera-native#readme",
+  "keywords": [
+    "homebridge-plugin",
+    "supports-hap",
+    "xiaomi",
+    "camera",
+    "homekit",
+    "cs2",
+    "miss",
+    "kosztyk"
+  ],
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || ^26.0.0",
+    "homebridge": "^1.8.0 || ^2.0.0"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "homebridge-ui/",
+    "config.schema.json",
+    "README.md",
+    "VALIDATION.md",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md",
+    "config.example.json"
+  ],
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "check": "node scripts/check.js",
+    "prepack": "npm run check"
+  },
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.2.6",
+    "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "ffmpeg-for-homebridge": "^2.1.9"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "homebridge": "^2.4.0",
+    "jsdom": "^26.1.0",
+    "jsqr": "^1.4.0"
+  }
+}

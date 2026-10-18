@@ -1,0 +1,10 @@
+{
+  "platform": "XiaomiCameraNative",
+  "name": "Xiaomi Camera Native",
+  "region": "de",
+  "userId": "YOUR_NUMERIC_XIAOMI_ACCOUNT_ID",
+  "passToken": "YOUR_ACCOUNT_PASSTOKEN",
+  "maxHeight": 720,
+  "exposePanTilt": true,
+  "cameras": []
+}

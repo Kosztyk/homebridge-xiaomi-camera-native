@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xiaomi Camera Native</title>
+<style>
+ :root{color-scheme:light dark} body{font:14px system-ui,sans-serif;margin:0;padding:22px;color:var(--bs-body-color,#333)}
+ main{max-width:780px;margin:auto}h1{font-size:25px;margin:0 0 8px}h2{font-size:18px;margin:0 0 16px}p{line-height:1.5}.sub{opacity:.75;margin:0 0 22px}
+ .card{border:1px solid #8885;border-radius:12px;padding:20px;margin-bottom:18px;background:transparent}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+ label{display:block;font-weight:600;margin-bottom:6px}input,select,button{font:inherit;box-sizing:border-box}input:not([type=checkbox]),select{display:block;width:100%;border:1px solid #8888;border-radius:7px;padding:10px;background:transparent;color:inherit}
+ button{border:1px solid #8888;border-radius:7px;padding:10px 16px;cursor:pointer;background:transparent;color:inherit}button.primary{background:#07817b;border-color:#07817b;color:white}button:disabled{opacity:.45;cursor:wait}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+ .hidden,[hidden]{display:none!important}.status{white-space:pre-wrap;padding:12px 14px;border-radius:7px;margin:14px 0;background:#07817b15}.error{background:#dc354520;color:#c02f3d}.camera{border-top:1px solid #8884;padding:17px 0 8px}.camera:first-child{border-top:0}.camera-title{display:flex;gap:10px;align-items:center;margin-bottom:5px}.camera-title label{margin:0}.details{font-size:12px;opacity:.7;margin-left:25px;margin-bottom:14px}.small{font-size:12px;opacity:.75}img{max-width:240px;background:#fff;margin:10px 0}.check{display:flex;gap:9px;align-items:center;font-weight:400} .check input{margin:0}.wide{grid-column:1/-1} summary{cursor:pointer;margin-bottom:15px}
+ .pairing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}.pairing-camera{border:1px solid #8885;border-radius:10px;padding:16px;min-width:0}.pairing-camera h3{font-size:16px;margin:0 0 8px;overflow-wrap:anywhere}.pairing-state{display:inline-block;font-size:12px;border-radius:20px;background:#07817b18;padding:4px 9px;margin:0 0 12px}.pairing-state.paired{background:#488a2518}.pairing-code{font:600 25px ui-monospace,SFMono-Regular,Consolas,monospace!important;text-align:center;letter-spacing:1px;margin:5px 0 10px}.pairing-qr{display:block;width:224px;max-width:100%;height:auto;image-rendering:pixelated;margin:10px auto 0}.pairing-camera .small{overflow-wrap:anywhere}
+ @media(max-width:550px){body{padding:12px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style>
+</head>
+<body><main>
+<h1>Xiaomi Camera Native</h1><p class="sub">Direct camera video for Apple Home · by Kosztyk</p>
+<div id="status" class="status" role="status" hidden></div>
+<section class="card" id="pairing-section"><h2>Add cameras to Apple Home</h2>
+<p>Scan each camera's QR code in Apple Home, or choose <strong>Add Accessory → More Options</strong>, select its name and enter its code.</p>
+<p id="pairing-note" class="small" role="status">Reading camera pairing details…</p>
+<div id="pairing-list" class="pairing-grid"></div>
+<div class="row"><button id="pairing-refresh" data-pairing type="button">Refresh pairing details</button></div>
+<p class="small">After changing your camera selection, save and restart Homebridge, then refresh this list. Each camera is added separately.</p></section>
+<section class="card" id="account"><h2>Xiaomi account</h2>
+<p>Choose the same region as Mi Home. Your camera video travels directly over your local network.</p>
+<div class="grid"><div><label for="region">Region</label><select id="region"><option value="de">Europe (de)</option><option value="cn">China (cn)</option><option value="i2">India (i2)</option><option value="ru">Russia (ru)</option><option value="sg">Singapore (sg)</option><option value="us">United States (us)</option></select></div>
+<div><label for="method">Sign-in method</label><select id="method"><option value="password">Username and password</option><option value="token">Existing account ID and passToken</option></select></div>
+<div class="password-field"><label for="username">Xiaomi username</label><input id="username" autocomplete="username"></div><div class="password-field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password"></div>
+<div class="token-field hidden"><label for="userId">Numeric Xiaomi account ID</label><input id="userId" inputmode="numeric" autocomplete="off"></div><div class="token-field hidden"><label for="passToken">Account passToken</label><input id="passToken" type="password" autocomplete="off"></div></div>
+<p class="small token-field hidden">Use your account passToken, such as the one used by your existing integration. An individual camera's 32-character device token cannot be used here.</p>
+<div class="row"><button class="primary" id="login" type="button">Sign in</button><span id="account-state" class="small"></span></div>
+<div id="challenge" hidden><p id="challenge-text"></p><img id="captcha-image" alt="Xiaomi CAPTCHA" hidden><label for="answer">Verification answer</label><input id="answer" autocomplete="one-time-code"><div class="row"><button id="submit-challenge" class="primary" type="button">Continue</button></div></div>
+<p class="small">The password is used for sign-in only. Reusable account credentials are saved in a private file on your Homebridge host.</p></section>
+<section class="card" id="cameras-section" hidden><h2>Cameras</h2><p>Choose cameras to publish. Set the local IP if Xiaomi did not provide it.</p><div id="camera-list"></div><div class="row"><button id="refresh" type="button">Refresh cameras</button></div><p class="small">Each camera is paired separately in Apple Home after restarting Homebridge. Its code and QR code appear in the pairing section above.</p></section>
+<section class="card"><details><summary>Video and controls</summary><div class="grid"><div><label for="maxHeight">Maximum video height</label><select id="maxHeight"><option value="720">720p</option><option value="480">480p</option><option value="360">360p</option></select></div><div><label for="maxFPS">Maximum frames per second</label><select id="maxFPS"><option value="20">20</option><option value="15">15</option></select></div><div><label for="maxBitrate">Maximum bitrate (kbit/s)</label><input id="maxBitrate" type="number" min="128" max="4000" value="1500"></div><div><label for="idleTimeout">Stop after idle (seconds)</label><input id="idleTimeout" type="number" min="0" max="300" value="15"></div><div class="wide"><label for="ffmpegPath">FFmpeg path (optional)</label><input id="ffmpegPath" placeholder="Automatic"></div><div class="wide"><label class="check"><input type="checkbox" id="exposePanTilt" checked>Expose pan/tilt controls for supported motorized cameras</label></div></div></details><p class="small">Live video and snapshots use H.264 conversion. This release provides video only; audio and HomeKit Secure Video recording are unavailable.</p></section>
+<div class="row"><button id="save" class="primary" type="button">Save settings</button></div>
+<p class="small">After saving, restart Homebridge to apply account and camera changes.</p>
+</main><script src="app.js"></script></body></html>

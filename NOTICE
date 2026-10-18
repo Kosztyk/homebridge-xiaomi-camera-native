@@ -1,0 +1,38 @@
+Homebridge Xiaomi Camera Native 1.0.1
+Copyright (c) 2026 Kosztyk
+
+The Node.js Xiaomi account, cryptographic, CS2 and MISS implementation is
+adapted from the user's Xiaomi Camera Native for Home Assistant 0.3.0 archive.
+That integration adapts Xiaomi protocol code from AlexxIT/go2rtc,
+Copyright (c) 2022 Alexey Khit, under the MIT License reproduced in LICENSE.
+
+Original go2rtc protocol reference revision documented in the supplied archive:
+c245815e75e2a5fd60b4290f12bfc04e55a984d3
+https://github.com/AlexxIT/go2rtc/commit/c245815e75e2a5fd60b4290f12bfc04e55a984d3
+
+Relevant upstream references:
+- internal/xiaomi/xiaomi.go: device discovery and MISS session provisioning
+- pkg/xiaomi/cloud.go: account authentication and signed cloud requests
+- pkg/xiaomi/crypto/crypto.go: NaCl session derivation and ChaCha20 framing
+- pkg/xiaomi/miss/client.go: authentication, video commands and frame formats
+- pkg/xiaomi/miss/cs2/conn.go: LAN negotiation, TCP framing and UDP ordering/ACKs
+- pkg/xiaomi/miss/producer.go: codec identifiers and timestamps
+- https://github.com/AlexxIT/go2rtc/pull/2531: MISS 0x112 movement operations
+
+The source-only test/fixtures/reference_protocol files and emulator.py retain
+the supplied Python implementation as an independent interoperability peer.
+They are excluded from the installable npm package. Python is not required at
+runtime. The native Node.js muxer, Homebridge integration, media lifecycle,
+custom UI, FFmpeg SRTP delegate and tests are provided with this project.
+
+Published crypto reference vectors used in automated tests:
+https://www.rfc-editor.org/rfc/rfc7748
+https://www.rfc-editor.org/rfc/rfc8439
+https://www.rfc-editor.org/rfc/rfc6229
+https://nacl.cr.yp.to/box.html
+
+The Homebridge CameraController / CameraStreamingDelegate APIs and custom UI
+API are provided by their respective Homebridge projects. The optional FFmpeg
+dependency is a separate project and retains its own distribution notices.
+No closed-source Xiaomi SDK, go2rtc executable or Home Assistant runtime is
+included. Xiaomi, HomeKit, Apple and Homebridge names identify compatibility.
