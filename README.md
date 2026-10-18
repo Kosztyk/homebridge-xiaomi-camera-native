@@ -1,6 +1,6 @@
 # Homebridge Xiaomi Camera Native
 
-Direct Xiaomi **MISS over CS2** cameras for Homebridge, by **Kosztyk**.
+Direct Xiaomi **MISS over CS2** cameras for Homebridge
 
 This plugin ports the protocol in Xiaomi Camera Native for Home Assistant
 0.3.0 to Node.js. It connects to the camera on your LAN and exposes a real
