@@ -34,7 +34,7 @@
     const map=new Map((config.cameras||[]).filter(c=>c&&c.did).map(c=>[String(c.did),{...c}]));
     document.querySelectorAll('.camera').forEach(el=>{
       const did=el.dataset.did,prev=map.get(did)||{};
-      map.set(did,{...prev,did,exclude:!el.querySelector('.enabled').checked,host:el.querySelector('.host').value.trim(),name:el.querySelector('.device-name').value.trim(),quality:el.querySelector('.quality').value,transport:el.querySelector('.transport').value});
+      map.set(did,{...prev,did,exclude:!el.querySelector('.enabled').checked,host:el.querySelector('.host').value.trim(),autoUpdateIp:el.querySelector('.auto-ip').checked,name:el.querySelector('.device-name').value.trim(),quality:el.querySelector('.quality').value,transport:el.querySelector('.transport').value});
     });return map;
   }
   function renderDevices(list){
@@ -43,7 +43,8 @@
     for(const d of list){
       const c=overrides.get(d.did)||{},el=document.createElement('div');el.className='camera';el.dataset.did=d.did;
       const enabled=overrides.has(d.did)?c.exclude!==true:!config.includeOnlyConfigured;
-      el.innerHTML=`<div class="camera-title"><input class="enabled" type="checkbox" id="device-${esc(d.did)}" ${enabled?'checked':''}><label for="device-${esc(d.did)}">${esc(d.name)}</label></div><div class="details">${esc(d.model)} · ID ${esc(d.did)}${d.online?'':' · Offline in Xiaomi cloud'}</div><div class="grid"><div><label>Display name<input class="device-name" value="${esc(c.name||d.name)}"></label></div><div><label>Local IPv4 address<input class="host" value="${esc(c.host||d.host)}" placeholder="192.168.68.x"></label></div><div><label>Source quality<select class="quality"><option value="auto">Automatic</option><option value="hd">HD</option><option value="sd">SD</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label></div><div><label>Transport<select class="transport"><option value="auto">Automatic</option><option value="udp">UDP</option><option value="tcp">TCP</option></select></label></div></div>`;
+      const automatic=c.autoUpdateIp!==false,host=(automatic&&d.workingHost)||c.host||d.host||'';
+      el.innerHTML=`<div class="camera-title"><input class="enabled" type="checkbox" id="device-${esc(d.did)}" ${enabled?'checked':''}><label for="device-${esc(d.did)}">${esc(d.name)}</label></div><div class="details">${esc(d.model)} · ID ${esc(d.did)}${d.online?'':' · Offline in Xiaomi cloud'}</div><div class="grid"><div><label>Display name<input class="device-name" value="${esc(c.name||d.name)}"></label></div><div><label>Camera IPv4 address<input class="host" value="${esc(host)}" placeholder="192.168.68.x"></label></div><div><label>Source quality<select class="quality"><option value="auto">Automatic</option><option value="hd">HD</option><option value="sd">SD</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label></div><div><label>Transport<select class="transport"><option value="auto">Automatic</option><option value="udp">UDP</option><option value="tcp">TCP</option></select></label></div><div class="wide"><label class="check"><input class="auto-ip" type="checkbox" ${automatic?'checked':''}>Automatically update IP</label><p class="small">Recover camera address changes through Xiaomi discovery and remember the working IP. Turn off to use only the address above.</p></div></div>`;
       el.querySelector('.quality').value=c.quality||(d.model==='mxiang.camera.c301'?'auto':'hd');el.querySelector('.transport').value=c.transport||'auto';box.append(el);
     }
     $('cameras-section').hidden=false;
@@ -63,7 +64,7 @@
   $('save').addEventListener('click',()=>task(async()=>{
     if(!authId)throw new Error('Sign in before saving camera settings.');
     const cameras=[...currentOverrides().values()];
-    for(const c of cameras)if(!c.exclude&&(!/^\d{1,3}(\.\d{1,3}){3}$/.test(c.host)||c.host.split('.').some(x=>Number(x)>255)))throw new Error('Set a valid IPv4 address for '+(c.name||c.did));
+    for(const c of cameras)if(!c.exclude&&!(c.autoUpdateIp!==false&&!c.host)&&(!/^\d{1,3}(\.\d{1,3}){3}$/.test(c.host)||c.host.split('.').some(x=>Number(x)>255)))throw new Error('Set a valid IPv4 address for '+(c.name||c.did));
     const next={...config,platform:'XiaomiCameraNative',name:config.name||'Xiaomi Camera Native',region:$('region').value,authId,includeOnlyConfigured:true,cameras,maxWidth:1280,maxHeight:Number($('maxHeight').value),maxFPS:Number($('maxFPS').value),maxBitrate:Number($('maxBitrate').value)||1500,idleTimeout:Number($('idleTimeout').value),exposePanTilt:$('exposePanTilt').checked,ffmpegPath:$('ffmpegPath').value.trim()};
     delete next.username;delete next.password;delete next.userId;delete next.passToken;
     const index=blocks.findIndex(b=>b.platform==='XiaomiCameraNative');if(index<0)blocks.push(next);else blocks[index]=next;

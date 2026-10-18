@@ -16,7 +16,8 @@
       "cameras": { "title": "Camera overrides", "type": "array", "default": [], "items": { "type": "object", "required": ["did"], "properties": {
         "did": { "title": "Xiaomi device ID", "type": "string", "minLength": 1 },
         "name": { "title": "Name override", "type": "string" },
-        "host": { "title": "Local IPv4 address override", "type": "string" },
+        "host": { "title": "Camera IPv4 address", "description": "Starting address in automatic mode; fixed address when automatic IP updates are disabled.", "type": "string" },
+        "autoUpdateIp": { "title": "Automatically update IP", "description": "Recover camera IP changes through Xiaomi discovery after a failed connection.", "type": "boolean", "default": true },
         "exclude": { "title": "Exclude camera", "type": "boolean", "default": false },
         "transport": { "title": "Transport", "type": "string", "enum": ["auto","udp","tcp"], "default": "auto" },
         "quality": { "title": "Source quality", "type": "string", "enum": ["auto","sd","hd","0","1","2","3","4","5"] },

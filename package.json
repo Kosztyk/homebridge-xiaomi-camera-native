@@ -1,6 +1,6 @@
 {
   "name": "homebridge-xiaomi-camera-native",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Direct Xiaomi MISS/CS2 cameras for Homebridge with HomeKit video, snapshots and pan/tilt.",
   "main": "index.js",
   "license": "MIT",

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 installer_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-package_archive="${1:-${installer_dir}/homebridge-xiaomi-camera-native-1.0.1.tgz}"
+package_archive="${1:-${installer_dir}/homebridge-xiaomi-camera-native-1.0.2.tgz}"
 
 managed_homebridge=false
 if [[ -x /opt/homebridge/bin/node && -f /opt/homebridge/bin/npm && -d /var/lib/homebridge ]]; then
@@ -26,6 +26,6 @@ if [[ "$managed_homebridge" == true ]]; then
 else
   npm install --global "$package_archive"
 fi
-echo "Installed Homebridge Xiaomi Camera Native 1.0.1."
+echo "Installed Homebridge Xiaomi Camera Native 1.0.2."
 echo "Restart Homebridge, open this plugin's settings, sign in, select cameras and save."
 echo "Restart again, then reopen settings to see each camera's HomeKit code and QR code."

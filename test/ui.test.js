@@ -7,6 +7,55 @@ const {delay,AsyncQueue}=require('../lib/async');
 const html=fs.readFileSync(path.join(__dirname,'../homebridge-ui/public/index.html'),'utf8').replace('<script src="app.js"></script>','');
 const app=fs.readFileSync(path.join(__dirname,'../homebridge-ui/public/app.js'),'utf8');
 async function until(predicate){for(let i=0;i<100;i++){if(predicate())return;await delay(10);}throw Error('UI operation did not finish');}
+async function settings(t,config,devices) {
+  const dom=new JSDOM(html,{runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,d=w.document,state={saved:null,saves:0};
+  w.homebridge={getPluginConfig:async()=>[config],request:async route=>route==='/pairing'?{ok:true,running:false,cameras:[]}:{ok:true,authenticated:true,authId:config.authId,devices},updatePluginConfig:async blocks=>{state.saved=JSON.parse(JSON.stringify(blocks));},savePluginConfig:async()=>{state.saves++;}};
+  w.eval(app);await until(()=>d.querySelector('.camera')&&!d.getElementById('save').disabled);return {dom,d,state};
+}
+test('legacy camera settings enable automatic recovery and display the verified working IP',async t=>{
+  const device={did:'1001',name:'Camera',model:'chuangmi.camera.046c04',host:'192.168.68.97',workingHost:'192.168.68.120'};
+  const {d,state}=await settings(t,{platform:'XiaomiCameraNative',authId:'d'.repeat(32),cameras:[{did:'1001',host:device.host,quality:'0'}]},[device]);
+  assert.equal(d.querySelector('.auto-ip').checked,true);assert.equal(d.querySelector('.host').value,device.workingHost);assert.equal(d.querySelector('.quality').value,'0');
+  d.getElementById('save').click();await until(()=>state.saves===1);
+  assert.equal(state.saved[0].cameras[0].autoUpdateIp,true);assert.equal(state.saved[0].cameras[0].host,device.workingHost);
+});
+test('fixed IP selection ignores learned addresses and survives settings refresh',async t=>{
+  const device={did:'1001',name:'Camera',model:'chuangmi.camera.046c04',host:'192.168.68.97',workingHost:'192.168.68.120'};
+  const {d,state}=await settings(t,{platform:'XiaomiCameraNative',authId:'d'.repeat(32),cameras:[{did:'1001',host:'192.168.68.99',quality:'sd',autoUpdateIp:false}]},[device]);
+  assert.equal(d.querySelector('.auto-ip').checked,false);assert.equal(d.querySelector('.host').value,'192.168.68.99');
+  d.querySelector('.host').value='192.168.68.100';d.getElementById('refresh').click();await until(()=>!d.getElementById('refresh').disabled);
+  assert.equal(d.querySelector('.host').value,'192.168.68.100');assert.equal(d.querySelector('.quality').value,'sd');assert.equal(d.querySelector('.auto-ip').checked,false);
+  d.getElementById('save').click();await until(()=>state.saves===1);assert.equal(state.saved[0].cameras[0].autoUpdateIp,false);assert.equal(state.saved[0].cameras[0].host,'192.168.68.100');
+});
+test('every source quality saves and reopens alongside the IP recovery setting',async t=>{
+  const devices=[{did:'1001',name:'Camera',model:'chuangmi.camera.046c04',host:'192.168.68.97'}];
+  for(const quality of ['auto','hd','sd','0','1','2','3','4','5']) {
+    for(const automatic of [true,false]) {
+      const {dom,d,state}=await settings(t,{platform:'XiaomiCameraNative',authId:'d'.repeat(32),cameras:[{did:'1001',quality:'hd'}]},devices);
+      d.querySelector('.quality').value=quality;d.querySelector('.auto-ip').checked=automatic;d.getElementById('save').click();await until(()=>state.saves===1);
+      assert.equal(state.saved[0].cameras[0].quality,quality);assert.equal(state.saved[0].cameras[0].autoUpdateIp,automatic);dom.window.close();
+      const reopened=await settings(t,state.saved[0],devices);assert.equal(reopened.d.querySelector('.quality').value,quality);assert.equal(reopened.d.querySelector('.auto-ip').checked,automatic);reopened.dom.window.close();
+    }
+  }
+});
+test('automatic discovery permits no starting IP while fixed mode requires a valid address',async t=>{
+  const {d,state}=await settings(t,{platform:'XiaomiCameraNative',authId:'d'.repeat(32)},[{did:'1001',name:'Camera',model:'chuangmi.camera.046c04',host:''}]);
+  d.getElementById('save').click();await until(()=>state.saves===1);assert.equal(state.saved[0].cameras[0].host,'');
+  d.querySelector('.auto-ip').checked=false;d.getElementById('save').click();await until(()=>!d.getElementById('save').disabled);
+  assert.equal(state.saves,1);assert.match(d.getElementById('status').textContent,/valid IPv4/);
+  d.querySelector('.auto-ip').checked=true;d.querySelector('.host').value='999.1.1.1';d.getElementById('save').click();await until(()=>!d.getElementById('save').disabled);assert.equal(state.saves,1);
+  d.querySelector('.auto-ip').checked=false;d.querySelector('.host').value='192.168.68.120';d.getElementById('save').click();await until(()=>state.saves===2);
+});
+test('UI server exposes only identity-matched verified addresses from the account cache',async t=>{
+  const {CameraAddressResolver}=require('../lib/address'),{UiServer}=require('../homebridge-ui/server');
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'xiaomi-ui-address-'));t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const device={did:'1001',name:'Camera',model:'chuangmi.camera.046c04',mac:'78:DF:72:1A:36:3B',host:'192.168.68.97'};
+  const cloud={region:'de',credentials:{user_id:'1000'},async devices(){return [device];}},resolver=new CameraAddressResolver(cloud,{storagePath:dir});
+  await resolver.confirm(device,'192.168.68.120');await resolver.close();
+  const context={cloud,homebridgeStoragePath:dir},first=await UiServer.prototype.listDevices.call(context);
+  assert.equal(first[0].host,device.host);assert.equal(first[0].workingHost,'192.168.68.120');
+  cloud.devices=async()=>[{...device,mac:'00:11:22:33:44:55'}];assert.equal((await UiServer.prototype.listDevices.call(context))[0].workingHost,'');
+});
 test('setup UI handles verification, clears password and saves only chosen camera IDs',async t=>{
   let saved=null,saveCount=0;const requests=[];
   const dom=new JSDOM(html,{runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,d=w.document;

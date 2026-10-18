@@ -20,7 +20,8 @@ async function setup(t,codec=5,size='320x180'){
 test('real H.265 camera produces JPEG snapshots and shares its connection with PTZ',{timeout:20000},async t=>{
   const {p,session,delegate}=await setup(t);const [one,two]=await Promise.all([call(delegate.handleSnapshotRequest.bind(delegate),{width:640,height:360}),call(delegate.handleSnapshotRequest.bind(delegate),{width:640,height:360})]);
   assert.equal(one[0],255);assert.equal(one[1],216);assert.ok(one.equals(two));await session.panTilt('right');
-  const stats=await p.stats();assert.equal(stats.authentications,1);assert.equal(stats.mediaStarts,1);assert.deepEqual(stats.operations,[2]);
+  let stats;for(let i=0;i<50;i++){stats=await p.stats();if(stats.operations.length)break;await delay(10);}
+  assert.equal(stats.authentications,1);assert.equal(stats.mediaStarts,1);assert.deepEqual(stats.operations,[2]);
   const probe=spawnSync('ffprobe',['-v','error','-show_streams','-of','json','pipe:0'],{input:one,timeout:5000});assert.equal(probe.status,0);const s=JSON.parse(probe.stdout).streams[0];assert.equal(s.codec_name,'mjpeg');assert.equal(s.width,320);assert.equal(s.height,180);
   await delay(400);assert.equal(session.client,null);
 });

@@ -1,4 +1,4 @@
-# Validation — version 1.0.1
+# Validation — version 1.0.2
 
 Validation performed in the build environment on 2026-10-18, using Node.js
 24.19.0 and system FFmpeg/ffprobe. Runtime artifacts are plain JavaScript.
@@ -44,9 +44,24 @@ classes, and actual FFmpeg processes. Xiaomi account services are mocked.
 - Pairing codes and copy buttons work even when Xiaomi authentication fails.
 - Browsers without clipboard permission can select the code for manual copying.
 - Stopped, unpublished or invalid records do not produce guessed pairing codes.
+- Stale saved IP recovery follows exact device ID/model and normalized MAC checks.
+- Multiple cameras share discovery; failures are throttled and later DHCP changes refresh.
+- Discovery timeouts and shutdown abort actual HTTP requests, including account refresh.
+- Unauthenticated addresses are never persisted; verified addresses survive reload
+  in a private, account-scoped cache and appear in settings.
+- Fixed IP mode ignores discovery and recovered-address caches.
+- Healthy shared connections and accessory UUIDs survive periodic discovery.
+- Automatic mode retries beyond four failures while video is requested and
+  shutdown promptly interrupts retry backoff.
+- A recovered address authenticates to the independent Python peer and shares
+  real decrypted video with a pan/tilt command on one camera connection.
+- All nine Source quality settings save and reopen in both IP modes.
+- Legacy settings enable automatic recovery; an empty starting IP is allowed
+  only in automatic mode.
 
-All **40 tests passed** with Homebridge 2.4.0. The Homebridge registration, pairing and
-streaming subset also passed all **14 tests** with Homebridge 1.11.1. The UI tests exercise
+All **67 tests passed** with Homebridge 2.4.0. The Homebridge registration, pairing,
+streaming and address recovery subset also passed all **36 tests** with Homebridge
+1.11.1. The UI tests exercise
 the DOM in jsdom and the real custom UI IPC server; they are not visual browser
 or full Homebridge UI installation tests.
 
@@ -58,6 +73,9 @@ or full Homebridge UI installation tests.
 - Physical pan/tilt movement and direction on each camera's firmware.
 - Accessory pairing and live viewing on an actual iPhone, Mac or Apple TV.
 - HomeKit remote viewing through an Apple home hub.
+- A physical router restart, real DHCP changes, and Xiaomi cloud address update
+  latency. IP recovery tests simulate address changes and outages; the real
+  protocol interoperability check uses a local camera emulator.
 - Actual startup latency, long-duration reliability, CPU and memory use on the
   user's Homebridge LXC host.
 

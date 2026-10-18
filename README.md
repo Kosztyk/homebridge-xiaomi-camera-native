@@ -1,13 +1,14 @@
 # Homebridge Xiaomi Camera Native
 
-Direct Xiaomi **MISS over CS2** cameras for Homebridge
+Direct Xiaomi **MISS over CS2** cameras for Homebridge, by **Kosztyk**.
 
 This plugin ports the protocol in Xiaomi Camera Native for Home Assistant
-0.3.0 to Node.js. It connects to the camera on your LAN and exposes a real
+0.3.0 to Node.js, with address recovery adapted from version 0.3.7. It connects
+to the camera on your LAN and exposes a real
 HomeKit camera with live video and snapshots. It does not need Home Assistant,
 go2rtc, Python, a separate container, or Xiaomi's native camera SDK at runtime.
 
-**Version 1.0.1 is an initial release.** Automated tests exercise the original
+**Version 1.0.2 adds automatic IP recovery.** Automated tests exercise the original
 Python camera emulator, real Homebridge 1.11.1 and 2.4.0 classes, and real
 FFmpeg decoding, including encrypted SRTP output. This Node.js implementation
 has not yet been tested against physical cameras or paired with an iPhone.
@@ -22,6 +23,7 @@ login also needs verification on your installation.
 - Existing numeric account ID and **account passToken** sign-in.
 - China, Europe, India, Russia, Singapore and US account regions.
 - Camera discovery, selection, exclusions, name and local IP overrides.
+- Automatic recovery and persistence of verified camera IP changes.
 - Native Node.js CS2 UDP/TCP negotiation, sequencing, ACKs and encryption.
 - H.264 and H.265 source video converted to H.264 for HomeKit.
 - JPEG snapshots, request coalescing and a short snapshot cache.
@@ -58,18 +60,18 @@ sudo apt-get install -y ffmpeg
 
 ## Install the supplied package
 
-Copy `homebridge-xiaomi-camera-native-1.0.1.tgz` onto your Homebridge host, then
+Copy `homebridge-xiaomi-camera-native-1.0.2.tgz` onto your Homebridge host, then
 install it with the Node/npm installation used by Homebridge:
 
 ```sh
-sudo npm install -g ./homebridge-xiaomi-camera-native-1.0.1.tgz
+sudo npm install -g ./homebridge-xiaomi-camera-native-1.0.2.tgz
 ```
 
 For your packaged Homebridge installation, use its bundled npm and plugin directory:
 
 ```sh
 export PATH="/opt/homebridge/bin:$PATH"
-npm install --prefix /var/lib/homebridge /tmp/homebridge-xiaomi-camera-native-1.0.1.tgz
+npm install --prefix /var/lib/homebridge /tmp/homebridge-xiaomi-camera-native-1.0.2.tgz
 hb-service restart
 ```
 
@@ -81,12 +83,12 @@ that installation's plugin installation mechanism and the same TGZ.
 2. Open **Plugins → Homebridge Xiaomi Camera Native → Settings**.
 3. Select the same region as Mi Home. For a European account, use **Europe (`de`)**.
 4. Sign in, completing any CAPTCHA or supported email/SMS code challenge.
-5. Select your cameras. Check each camera's local IPv4 address.
+5. Select your cameras. Leave **Automatically update IP** checked for DHCP recovery.
 6. Click **Save settings**, then restart Homebridge.
 7. Pair each camera separately in Apple Home, as described below.
 
-This package is supplied for local installation. It has not been published to
-npm or GitHub as part of this build, so it will not yet appear in plugin search.
+This 1.0.2 update is supplied for local installation. Publishing this update to
+npm or GitHub is a separate step.
 
 ### Pair each camera with Apple Home
 
@@ -153,6 +155,41 @@ not replayed on a new connection. UDP retransmission uses the same sequence
 number for delivery. Transport delivery does not confirm physical movement or
 position on every camera firmware.
 
+## Camera IP changes and source quality
+
+**Automatically update IP** is enabled by default for each camera, including
+existing configurations. The saved IPv4 address is a starting address in this
+mode. After a failed connection, the plugin tries a newly discovered address
+for the same Xiaomi device ID and model, and checks the MAC when both records
+have one. Each address gets fresh camera session keys. A new IP becomes the
+remembered address only after successful camera authentication.
+
+Working addresses are saved privately per Xiaomi account and region under
+`xiaomi-camera-native/addresses-<account-hash>.json` in Homebridge storage. They
+survive restarts. Reopen or refresh the plugin settings to see the verified IP.
+Recovery does not rewrite `config.json`, restart Homebridge, or change HomeKit
+pairings. A healthy shared camera connection remains open during discovery.
+
+Cloud recovery is shared across cameras and limited to one refresh per
+30 seconds, including failures, with a 10-second discovery timeout. Automatic
+sessions continue retrying with backoff while video is requested, so a longer
+router outage does not exhaust the old four-attempt limit. A later snapshot,
+live view or pan/tilt request can also initiate recovery. Failed motor commands
+are not replayed.
+
+The Home Assistant version can additionally use its router `device_tracker`
+entities. Homebridge has no equivalent tracker data in this plugin, so this
+port relies on Xiaomi reporting the new local IP. If that information is stale,
+enter the current IP or reserve an address on the router. To keep a deliberate
+fixed address, enter it and uncheck **Automatically update IP**, then save and
+restart Homebridge.
+
+**Source quality** is saved per camera and restored when settings reopen. All
+nine choices (`auto`, `hd`, `sd`, and `0`–`5`) are retained during IP recovery.
+Save and restart Homebridge after changing source quality; recovery itself
+does not change it. Source quality selects the camera input, while the output
+height setting limits the video delivered to HomeKit.
+
 ## Video, startup time and CPU
 
 The default maximum is **1280×720 at 20 fps**, H.264, up to 1500 kbit/s. Lower
@@ -211,6 +248,7 @@ of only specific IDs, use `includeOnlyConfigured: true` and supply those IDs:
     {
       "did": "YOUR_CAMERA_DEVICE_ID",
       "host": "192.168.68.97",
+      "autoUpdateIp": true,
       "name": "Living Camera",
       "quality": "hd",
       "transport": "auto",
@@ -235,8 +273,10 @@ output height cap.
 
 - **Not in Home:** pair the external camera itself, in addition to the main bridge.
 - **Account has no cameras:** check the Xiaomi account and region in Mi Home.
-- **Missing IP / handshake timeout:** set the current camera IPv4 address and
-  confirm Homebridge can reach it directly. Automatic transport is preferred.
+- **Missing IP / handshake timeout:** leave **Automatically update IP** enabled
+  and confirm Homebridge can reach the camera directly. If Xiaomi still reports
+  an old address, enter the current camera IPv4 address and restart Homebridge.
+  Automatic transport is preferred.
 - **Unsupported CS2 vendor:** this camera uses a different protocol; changing
   its IP or video quality cannot add support for it.
 - **Account expired:** sign in again in the plugin settings, save and restart.

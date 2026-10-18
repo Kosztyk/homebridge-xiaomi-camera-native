@@ -1,10 +1,15 @@
-Homebridge Xiaomi Camera Native 1.0.1
+Homebridge Xiaomi Camera Native 1.0.2
 Copyright (c) 2026 Kosztyk
 
 The Node.js Xiaomi account, cryptographic, CS2 and MISS implementation is
 adapted from the user's Xiaomi Camera Native for Home Assistant 0.3.0 archive.
 That integration adapts Xiaomi protocol code from AlexxIT/go2rtc,
 Copyright (c) 2022 Alexey Khit, under the MIT License reproduced in LICENSE.
+
+The identity-based address resolver and automatic connection recovery rules
+are adapted from the user's supplied Xiaomi Camera Native for Home Assistant
+0.3.7, especially protocol/address.py and protocol/session.py. Home Assistant
+router device_tracker lookups are not included in this Homebridge port.
 
 Original go2rtc protocol reference revision documented in the supplied archive:
 c245815e75e2a5fd60b4290f12bfc04e55a984d3

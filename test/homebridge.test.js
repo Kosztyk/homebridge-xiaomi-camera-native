@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {XiaomiCameraPlatform}=require('../lib/platform');
 const {AuthStore}=require('../lib/store');
+const {CameraAddressResolver}=require('../lib/address');
 const {HomebridgeAPI}=require(path.join(path.dirname(process.env.HOMEBRIDGE_TEST_ENTRY||require.resolve('homebridge')),'api.js'));
 const logger={info(){},warn(){},error(){},debug(){}};
 function readTlv(data) {
@@ -32,6 +33,22 @@ test('selection, exclusion and host overrides use device IDs and ignore blank ro
 });
 test('selecting no cameras publishes none',async t=>{
   const {platform,published}=create(t,{includeOnlyConfigured:true,cameras:[]});await platform.source.start();await platform.discover();assert.equal(published.length,0);
+});
+test('periodic discovery keeps the working IP, live connection and HomeKit identity',async t=>{
+  const {platform,published,dir}=create(t,{includeOnlyConfigured:true,cameras:[{did:'1',host:'192.168.68.97'}]});
+  platform.addressResolver=new CameraAddressResolver(platform.cloud,{storagePath:dir});
+  const device=(await platform.cloud.devices())[0];await platform.addressResolver.confirm(device,'192.168.68.120');
+  await platform.source.start();await platform.discover();const session=platform.sessions.get('1'),uuid=published[0].UUID;
+  assert.equal(session.host,'192.168.68.120');assert.equal(session.options.autoUpdateIp,true);
+  let closed=0;const client={connection:{closed:false,error:null},close(){closed++;}};session.client=client;
+  platform.cloud.devices=async()=>[{...device,host:'192.168.68.121'}];await platform.discover();
+  assert.equal(session.host,'192.168.68.120');assert.equal(session.device.host,'192.168.68.121');assert.equal(session.client,client);assert.equal(closed,0);assert.equal(published.length,1);assert.equal(published[0].UUID,uuid);
+  platform.cloud.devices=async()=>[{...device,model:'mxiang.camera.c301',host:'192.168.68.122'}];await platform.discover();assert.equal(session.device.host,'192.168.68.121');assert.equal(session.client,client);
+});
+test('automatic cameras without a seed IP can recover while invalid fixed IP cameras are skipped',async t=>{
+  const {platform,published}=create(t,{cameras:[{did:'2',autoUpdateIp:false}]});
+  platform.cloud.devices=async()=>[{did:'1',name:'Automatic',model:'chuangmi.camera.046c04',host:''},{did:'2',name:'Fixed',model:'mxiang.camera.c301',host:''}];
+  await platform.source.start();await platform.discover();assert.equal(published.length,1);assert.equal(platform.sessions.get('1').options.autoUpdateIp,true);assert.equal(platform.sessions.has('2'),false);
 });
 test('HomeKit advertises 720p at 15 fps and honors resolution caps',async t=>{
   for(const maxHeight of [720,360]) {

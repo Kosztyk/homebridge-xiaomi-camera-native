@@ -3,6 +3,7 @@ const {HomebridgePluginUiServer}=require('@homebridge/plugin-ui-utils');
 const {XiaomiCloud,REGIONS}=require('../lib/cloud');
 const {AuthStore}=require('../lib/store');
 const {readPairingDetails}=require('../lib/pairing');
+const {CameraAddressResolver}=require('../lib/address');
 const {LoginChallenge,AuthenticationError,safeError}=require('../lib/errors');
 class UiServer extends HomebridgePluginUiServer {
   constructor() {
@@ -35,7 +36,7 @@ class UiServer extends HomebridgePluginUiServer {
     this.authId=payload.authId;this.record=await this.store.load(this.authId);
     if(this.record.region!==(payload.region||'de'))return {authenticated:false,regionChanged:true};
     await this.makeCloud(this.record.region).authenticate(this.record.credentials);
-    return {authenticated:true,authId:this.authId,devices:await this.cloud.devices()};
+    return {authenticated:true,authId:this.authId,devices:await this.listDevices()};
   }
   async login(payload) {
     this.authId=null;this.record=null;const cloud=this.makeCloud(payload.region||'de');
@@ -53,11 +54,17 @@ class UiServer extends HomebridgePluginUiServer {
   async complete() {
     this.record={region:this.cloud.region,credentials:{...this.cloud.credentials}};
     this.authId=await this.store.save(this.authId,this.record);
-    return {authenticated:true,authId:this.authId,devices:await this.cloud.devices()};
+    return {authenticated:true,authId:this.authId,devices:await this.listDevices()};
   }
   async devices(payload) {
     if(!this.cloud||this.authId!==payload.authId)return this.status(payload);
-    return {authenticated:true,authId:this.authId,devices:await this.cloud.devices()};
+    return {authenticated:true,authId:this.authId,devices:await this.listDevices()};
+  }
+  async listDevices() {
+    const devices=await this.cloud.devices();
+    const addresses=new CameraAddressResolver(this.cloud,{storagePath:this.homebridgeStoragePath});
+    await addresses.load();
+    return devices.map(device=>({...device,workingHost:addresses.knownAddress(device)||''}));
   }
 }
 if(require.main===module)new UiServer();
